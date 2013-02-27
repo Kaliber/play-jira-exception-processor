@@ -35,50 +35,33 @@ case class PlayProjectIssue(
 
 object PlayProjectIssue extends ((Option[String], Option[String], Option[String], Option[String]) => PlayProjectIssue) {
 
-  implicit class ReadsBuilder[M[_], A](o: M[A]) {
-    def buildRead[B](f1: A => B)(implicit fu: Functor[M]) =
-      fu.fmap[A, B](o, f1)
-  }
+   implicit object format extends Format[PlayProjectIssue] {
+    def reads(json: JsValue) = {
 
-  implicit class WritesBuilder[M[_], A](o: M[A]) {
-    def buildWrite[B](f1: B => A)(implicit fu: ContravariantFunctor[M]) =
-      fu.contramap[A, B](o, f1)
-  }
+      val fields = json \ "fields"
 
-  implicit val reads: Reads[PlayProjectIssue] =
-    ((__ \ "key").readNullable[String] and
-      (__ \ "fields").readNullable(
-        (__ \ "summary").readNullable[String] and
-          (__ \ "description").readNullable[String] and
-          (__ \ Jira.hashCustomField).readNullable[String] tupled) tupled).map {
-      case (key, Some((summary, description, customField))) =>
-        PlayProjectIssue(key, summary, description, customField)
-      case (key, None) => 
-        PlayProjectIssue(key, None, None, None)
+      JsSuccess(PlayProjectIssue(
+        (json \ "key").asOpt[String],
+        (fields \ "summary").asOpt[String],
+        (fields \ "description").asOpt[String],
+        (fields \ Jira.hashCustomField).asOpt[String]))
     }
 
-  implicit val writes = {
-    val specialUnapply = unlift(PlayProjectIssue.unapply) andThen {
-      case (key, summary, description, hash) =>
-        (
-          Jira.projectId,
-          summary,
-          description,
-          hash,
-          Jira.issueType,
-          Seq(Jira.componentId))
-    }
+    def writes(playProjectIssue: PlayProjectIssue) = {
 
-    (__ \ "fields").write(
-      (__ \ "project").write(
-        (__ \ "id").write[String]) and
-        (__ \ "summary").write[Option[String]] and
-        (__ \ "description").write[Option[String]] and
-        (__ \ Jira.hashCustomField).write[Option[String]] and
-        (__ \ "issuetype").write(
-          (__ \ "id").write[String]) and
-          (__ \ "components").write(
-            Writes.traversableWrites(
-              (__ \ "id").write[String])) tupled) buildWrite specialUnapply
+      def field(pairs: (String, String)*): JsObject =
+        JsObject(pairs.map { case (key, value) => key -> toJson(value) })
+      def map(pairs: (String, JsValue)*): JsObject =
+        JsObject(pairs)
+
+      map(
+        "fields" -> map(
+          "project" -> field("id" -> Jira.projectId),
+          "summary" -> toJson(playProjectIssue.summary),
+          "description" -> toJson(playProjectIssue.description),
+          "issuetype" -> field("id" -> Jira.issueType),
+          "components" -> JsArray(Seq(field("id" -> Jira.componentId))),
+          Jira.hashCustomField -> toJson(playProjectIssue.hash)))
+    }
   }
 }

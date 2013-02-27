@@ -1,4 +1,4 @@
-Jira exception processor module for Play 2.0.4
+Jira exception processor module for Play 2.1
 ============================================
 
 This module is created for internal use. If there is any interest in this feature for play, please contact us so we 
@@ -11,7 +11,7 @@ In the `Build.scala` file add the dependency
 
 ``` scala
   val appDependencies = Seq(
-    "nl.rhinofly" %% "jira-exception-processor" % "2.0.1")
+    "nl.rhinofly" %% "jira-exception-processor" % "3.0.1")
 
   val main = PlayProject(appName, appVersion, appDependencies, mainLang = SCALA).settings(
     resolvers += "Rhinofly Internal Repository" at "http://maven-repository.rhinofly.net:8081/artifactory/libs-release-local")
