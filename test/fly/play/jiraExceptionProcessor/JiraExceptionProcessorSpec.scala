@@ -27,7 +27,7 @@ object JiraExceptionProcessorSpec extends Specification with Before {
   "JiraExceptionProcessor" should {
     "report an error or add a comment" in {
 
-      val r = FakeRequest("GET", "http://testuri.nl/?something", FakeHeaders(Map("testheader" -> Seq("headervalue"))), "body")
+      val r = FakeRequest("GET", "http://testuri.nl/?something", FakeHeaders(Seq("testheader" -> Seq("headervalue"))), "body")
 
       JiraExceptionProcessor.reportError(r, new Exception("Issue from automatic test"))
 

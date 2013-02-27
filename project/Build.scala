@@ -1,6 +1,6 @@
 import sbt._
 import Keys._
-import PlayProject._
+import play.Project._
 
 object ApplicationBuild extends Build {
 
@@ -8,14 +8,14 @@ object ApplicationBuild extends Build {
   val appVersion = "2.0.1"
 
   val appDependencies = Seq(
-    "nl.rhinofly" %% "api-ses" % "1.0.1")
+    "play.modules.mailer" %% "play-mailer" % "1.1.0")
 
   def rhinoflyRepo(version: String) = {
     val repo = if (version endsWith "SNAPSHOT") "snapshot" else "release"
     Some("Rhinofly Internal " + repo.capitalize + " Repository" at "http://maven-repository.rhinofly.net:8081/artifactory/libs-" + repo + "-local")
   }
 
-  val main = PlayProject(appName, appVersion, appDependencies).settings(
+  val main = play.Project(appName, appVersion, appDependencies).settings(
     organization := "nl.rhinofly",
     publishTo <<= version(rhinoflyRepo),
     resolvers += rhinoflyRepo("RELEASE").get,

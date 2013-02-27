@@ -3,18 +3,22 @@ package fly.play.jiraExceptionProcessor
 import play.api.mvc.RequestHeader
 import java.io.StringWriter
 import java.io.PrintWriter
-import fly.play.libraryUtils.PlayConfiguration
 import play.api.mvc.Session
 import play.api.Play.current
 import java.security.MessageDigest
-import fly.play.ses.Ses
-import fly.play.ses.Email
-import fly.play.ses.EmailAddress
-import fly.play.ses.Recipient
 import javax.mail.Message
 import play.api.PlayException
 import play.Logger
 import play.api.libs.concurrent.Promise
+import play.modules.mailer.PlayConfiguration
+import play.api.libs.concurrent.Execution.Implicits._
+import scala.concurrent.Await
+import scala.concurrent.duration._
+import play.modules.mailer.Mailer
+import play.modules.mailer.Email
+import play.modules.mailer.EmailAddress
+import play.modules.mailer.Recipient
+import scala.language.postfixOps
 
 object JiraExceptionProcessor {
 
@@ -52,7 +56,7 @@ object JiraExceptionProcessor {
       val hash = createHash(description)
       val comment = getRequestString(request)
 
-      Jira.findIssues(hash)
+      val result = Jira.findIssues(hash)
         .flatMap {
           //we found an issue, add the comment
           case Right(Some(issue)) => Jira.addComment(issue.key.get, comment)
@@ -66,11 +70,12 @@ object JiraExceptionProcessor {
               }
           case Left(error) => Promise pure Left(error)
 
-        }.value.get
+        }
 
+        Await.result(result, 10 seconds)
     } catch {
       case e: PlayException => throw e
-      case e => Left(Error(0, Seq(
+      case e: Throwable => Left(Error(0, Seq(
         "Exception while calling Jira:",
         e.getMessage,
         getStackTraceString(e),
@@ -96,7 +101,7 @@ object JiraExceptionProcessor {
     val toName = PlayConfiguration("jira.exceptionProcessor.mail.to.name")
     val toAddress = PlayConfiguration("jira.exceptionProcessor.mail.to.address")
     
-    Ses.sendEmail(Email(
+    Mailer.sendEmail(Email(
       subject = "Failed to report error for project %s and component %s" format (Jira.projectKey, Jira.componentName),
       from = EmailAddress(fromName, fromAddress),
       replyTo = None,

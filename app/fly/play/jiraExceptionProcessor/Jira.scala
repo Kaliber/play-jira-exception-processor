@@ -1,19 +1,24 @@
 package fly.play.jiraExceptionProcessor
 
 import play.api.Play.current
-import play.api.libs.concurrent.Promise
 import play.api.libs.json.{ Format, JsObject }
 import play.api.libs.json.Json.toJson
 import play.api.libs.json.Reads
 import play.api.libs.ws.{ Response, WS }
 import com.ning.http.client.Realm.AuthScheme
-import fly.play.libraryUtils.PlayConfiguration
 import play.api.libs.json.JsValue
 import play.Logger
 import play.api.Application
+import play.modules.mailer.PlayConfiguration
+import play.api.libs.concurrent.Execution.Implicits._
+import play.api.libs.concurrent.Waiting
+import scala.concurrent.Await
+import scala.concurrent.duration._
+import scala.concurrent.Future
+import scala.language.postfixOps
+import play.api.libs.json.Json
 
 object Jira {
-
   /**
    * The endpoint, for example: https://jira.rhinofly.net/rpc/json-rpc/jirasoapservice-v2/
    */
@@ -60,7 +65,8 @@ object Jira {
             throw new Exception("Problem retrieving the 'Hash' custom field ('%s'): %s" format (status, response.body))
         }
       }
-    customFieldPromise.value.get
+    
+    Await.result(customFieldPromise, 10 seconds)
   }
 
   /**
@@ -76,7 +82,7 @@ object Jira {
               throw new Exception("Problem retrieving the 'Hash' custom field ('%s'): %s" format (status, response.body))
           }
         }
-    projectPromise.value.get
+    Await.result(projectPromise, 10 seconds)
   }
 
   /**
@@ -126,7 +132,7 @@ object Jira {
   /**
    * Simple method to add a comment to an issue
    */
-  def addComment(issueKey: String, comment: String): Promise[Either[Error, Success]] = {
+  def addComment(issueKey: String, comment: String): Future[Either[Error, Success]] = {
     val body = toJson(Map("body" -> toJson(comment)))
 
     request("issue/%s/comment" format issueKey)
@@ -138,7 +144,7 @@ object Jira {
   /**
    * Retrieves a list of issues for the given hash
    */
-  def findIssues(hash: String): Promise[Either[Error, Option[PlayProjectIssue]]] = {
+  def findIssues(hash: String): Future[Either[Error, Option[PlayProjectIssue]]] = {
     request("search")
       .withQueryString(
         "jql" ->
@@ -153,7 +159,7 @@ object Jira {
       }
   }
 
-  def createIssue(issue: PlayProjectIssue): Promise[Either[Error, PlayProjectIssue]] = {
+  def createIssue(issue: PlayProjectIssue): Future[Either[Error, PlayProjectIssue]] = {
     val body = toJson(issue)
 
     request("issue").post(body) map handleResponse {
