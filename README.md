@@ -13,7 +13,7 @@ In the `Build.scala` file add the dependency
   val appDependencies = Seq(
     "nl.rhinofly" %% "jira-exception-processor" % "3.0.1")
 
-  val main = PlayProject(appName, appVersion, appDependencies, mainLang = SCALA).settings(
+  val main = play.Project(appName, appVersion, appDependencies, mainLang = SCALA).settings(
     resolvers += "Rhinofly Internal Repository" at "http://maven-repository.rhinofly.net:8081/artifactory/libs-release-local")
 
   }
