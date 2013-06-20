@@ -68,6 +68,8 @@ Usage
 Create a `Global.scala` file in the root package with the following contents:
 
 ``` scala
+import fly.play.jiraExceptionProcessor.JiraExceptionProcessor
+
 object Global extends GlobalSettings {
 	override def onError(request:RequestHeader, ex:Throwable) = {
 	  JiraExceptionProcessor.reportError(request, ex)
