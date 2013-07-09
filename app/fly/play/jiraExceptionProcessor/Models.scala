@@ -57,7 +57,7 @@ object PlayProjectIssue extends ((Option[String], Option[String], Option[String]
       map(
         "fields" -> map(
           "project" -> field("id" -> Jira.projectId),
-          "summary" -> toJson(playProjectIssue.summary),
+          "summary" -> toJson(playProjectIssue.summary.slice(0, 250)),
           "description" -> toJson(playProjectIssue.description),
           "issuetype" -> field("id" -> Jira.issueType),
           "components" -> JsArray(Seq(field("id" -> Jira.componentId))),
