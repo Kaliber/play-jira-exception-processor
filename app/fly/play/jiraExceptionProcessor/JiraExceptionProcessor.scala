@@ -54,7 +54,7 @@ object JiraExceptionProcessor {
 
     val result: Either[Error, Success] =
       try {
-        val hash = createHash(description)
+        val hash = createHash(removePlayId(description))
         val comment = getRequestString(request)
 
         val result =
@@ -92,6 +92,9 @@ object JiraExceptionProcessor {
     }
   }
 
+  def removePlayId(message:String) = 
+    message.replaceFirst("""@[^\s]*""", "")
+  
   def sendEmail(error: Error) = {
     val message = "Status: " + error.status + "\n" +
       error.messages.mkString("\n\n")

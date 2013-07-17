@@ -2,6 +2,7 @@ package fly.play.jiraExceptionProcessor
 
 import org.specs2.mutable.{ Specification, Before }
 import play.api.test._
+import play.api.PlayException
 
 object JiraExceptionProcessorSpec extends Specification with Before {
   def f = FakeApplication(new java.io.File("./test/"))
@@ -25,7 +26,7 @@ object JiraExceptionProcessorSpec extends Specification with Before {
   }
 
   "JiraExceptionProcessor" should {
-    "report an error or add a comment" in {
+    "report an error and add a comment" in {
 
       val r = FakeRequest("GET", "http://testuri.nl/?something", FakeHeaders(Seq("testheader" -> Seq("headervalue"))), "body")
 
@@ -56,6 +57,12 @@ object JiraExceptionProcessorSpec extends Specification with Before {
       val r = FakeRequest("GET", "http://testuri.nl/?something", FakeHeaders(Seq("testheader" -> Seq("headervalue"))), "body")
 
       JiraExceptionProcessor.reportError(r, new Exception("Issue from automatic test with more than 250 characters and a newline               \n                                                                                                                                                                                       end"))
+    }
+    
+    "report an error as similar if it's a PlayException" in {
+      val r = FakeRequest("GET", "http://testuri.nl/?something", FakeHeaders(Seq("testheader" -> Seq("headervalue 1"))), "body 1")
+
+      JiraExceptionProcessor.reportError(r, new PlayException("test play exception", "with ID"))
     }
 
   }
