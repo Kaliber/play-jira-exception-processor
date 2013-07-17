@@ -52,37 +52,39 @@ object JiraExceptionProcessor {
     val summary = ex.getMessage
     val description = getStackTraceString(ex)
 
-    val result: Either[Error, Success] = try {
-      val hash = createHash(description)
-      val comment = getRequestString(request)
+    val result: Either[Error, Success] =
+      try {
+        val hash = createHash(description)
+        val comment = getRequestString(request)
 
-      val result = Jira.findIssues(hash)
-        .flatMap {
-          //we found an issue, add the comment
-          case Right(Some(issue)) => Jira.addComment(issue.key.get, comment)
-          //no issue found, create the issue
-          case Right(_) =>
-            (Jira createIssue PlayProjectIssue(None, Some(summary), Some(description), Some(hash)))
-              .flatMap {
-                //add the comment
-                case Right(playProjectIssue) => Jira.addComment(playProjectIssue.key.get, comment)
-                case Left(error) => Promise pure Left(error)
-              }
-          case Left(error) => Promise pure Left(error)
+        val result =
+          Jira.findIssues(hash)
+            .flatMap {
+              //we found an issue, add the comment
+              case Right(Some(issue)) => Jira.addComment(issue.key.get, comment)
+              //no issue found, create the issue
+              case Right(_) =>
+                (Jira createIssue PlayProjectIssue(None, Some(summary), Some(description), Some(hash)))
+                  .flatMap {
+                    //add the comment
+                    case Right(playProjectIssue) => Jira.addComment(playProjectIssue.key.get, comment)
+                    case Left(error) => Promise pure Left(error)
+                  }
+              case Left(error) => Promise pure Left(error)
 
-        }
+            }
 
         Await.result(result, 10 seconds)
-    } catch {
-      case e: PlayException => throw e
-      case e: Throwable => Left(Error(0, Seq(
-        "Exception while calling Jira:",
-        e.getMessage,
-        getStackTraceString(e),
-        "Original error:",
-        summary,
-        description)))
-    }
+      } catch {
+        case e: PlayException => throw e
+        case e: Throwable => Left(Error(0, Seq(
+          "Exception while calling Jira:",
+          e.getMessage,
+          getStackTraceString(e),
+          "Original error:",
+          summary,
+          description)))
+      }
 
     result match {
       case Left(error) => sendEmail(error)
@@ -100,7 +102,7 @@ object JiraExceptionProcessor {
     val fromAddress = PlayConfiguration("jira.exceptionProcessor.mail.from.address")
     val toName = PlayConfiguration("jira.exceptionProcessor.mail.to.name")
     val toAddress = PlayConfiguration("jira.exceptionProcessor.mail.to.address")
-    
+
     Mailer.sendEmail(Email(
       subject = "Failed to report error for project %s and component %s" format (Jira.projectKey, Jira.componentName),
       from = EmailAddress(fromName, fromAddress),

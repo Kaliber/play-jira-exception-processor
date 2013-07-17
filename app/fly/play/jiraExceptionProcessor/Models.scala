@@ -57,11 +57,14 @@ object PlayProjectIssue extends ((Option[String], Option[String], Option[String]
       map(
         "fields" -> map(
           "project" -> field("id" -> Jira.projectId),
-          "summary" -> toJson(playProjectIssue.summary.slice(0, 250)),
+          "summary" -> toJson(trimSummary(playProjectIssue.summary)),
           "description" -> toJson(playProjectIssue.description),
           "issuetype" -> field("id" -> Jira.issueType),
           "components" -> JsArray(Seq(field("id" -> Jira.componentId))),
           Jira.hashCustomField -> toJson(playProjectIssue.hash)))
     }
+    
+    def trimSummary(summary:Option[String]):Option[String] =
+      summary.map(_.takeWhile(_ != '\n').take(250))
   }
 }
