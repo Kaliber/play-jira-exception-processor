@@ -5,7 +5,7 @@ import play.Project._
 object ApplicationBuild extends Build {
 
   val appName = "jira-exception-processor"
-  val appVersion = "3.0.3"
+  val appVersion = "3.0.4"
 
   val appDependencies = Seq(
     "play.modules.mailer" %% "play-mailer" % "1.1.0")

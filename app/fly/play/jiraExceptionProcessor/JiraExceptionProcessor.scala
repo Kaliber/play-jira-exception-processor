@@ -22,13 +22,17 @@ import scala.language.postfixOps
 
 object JiraExceptionProcessor {
 
+  def reportError(request: RequestHeader, ex: Throwable): Unit = {
+    reportError(ErrorInformation(ex, getRequestString(request)))
+  }
+
   def getStackTraceString(ex: Throwable): String = {
     val s = new StringWriter
     val p = new PrintWriter(s)
     ex.printStackTrace(p)
     s.toString
   }
-
+  
   def getRequestString(request: RequestHeader): String = {
 
     "uri: " + request.uri + "\n" +
@@ -46,16 +50,17 @@ object JiraExceptionProcessor {
   def keyValue(key: String, value: String): String = "   " + key + ": " + value
   def keyValueSeq(key: String, value: Seq[String]): String = keyValue(key, value.mkString(", "))
 
-  def reportError(request: RequestHeader, ex: Throwable): Unit = {
+  def reportError(information: ErrorInformation): Unit = {
     if (!PlayConfiguration("jira.exceptionProcessor.enabled").toBoolean) return
 
-    val summary = ex.getMessage
-    val description = getStackTraceString(ex)
+    val summary = information.summary
+    val description = information.description
 
     val result: Either[Error, Success] =
       try {
-        val hash = createHash(removePlayId(description))
-        val comment = getRequestString(request)
+
+        val hash = information.hash
+        val comment = information.comment
 
         val result =
           Jira.findIssues(hash)
@@ -92,9 +97,6 @@ object JiraExceptionProcessor {
     }
   }
 
-  def removePlayId(message:String) = 
-    message.replaceFirst("""@[^\s]*""", "")
-  
   def sendEmail(error: Error) = {
     val message = "Status: " + error.status + "\n" +
       error.messages.mkString("\n\n")
@@ -117,7 +119,5 @@ object JiraExceptionProcessor {
       attachments = Seq.empty))
   }
 
-  def createHash(str: String): String =
-    MessageDigest.getInstance("MD5").digest(str.getBytes).map("%02X" format _).mkString
 }
 

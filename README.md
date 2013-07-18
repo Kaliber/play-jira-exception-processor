@@ -18,7 +18,7 @@ In the `Build.scala` file add the dependency
 
 ``` scala
   val appDependencies = Seq(
-    "nl.rhinofly" %% "jira-exception-processor" % "3.0.3")
+    "nl.rhinofly" %% "jira-exception-processor" % "3.0.4")
 
   val main = play.Project(appName, appVersion, appDependencies, mainLang = SCALA).settings(
     resolvers += "Rhinofly Internal Repository" at "http://maven-repository.rhinofly.net:8081/artifactory/libs-release-local")
@@ -76,6 +76,15 @@ object Global extends GlobalSettings {
 	  super.onError(request, ex)
 	}
 }
+```
+
+Other examples:
+
+``` scala
+import fly.play.jiraExceptionProcessor.JiraExceptionProcessor
+
+JiraExceptionProcessor.reportError(ErrorInformation("summary", "description", "comment"))
+JiraExceptionProcessor.reportError(ErrorInformation(throwable, "comment"))
 ```
 
 Testing

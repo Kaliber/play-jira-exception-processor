@@ -62,8 +62,27 @@ object JiraExceptionProcessorSpec extends Specification with Before {
     "report an error as similar if it's a PlayException" in {
       val r = FakeRequest("GET", "http://testuri.nl/?something", FakeHeaders(Seq("testheader" -> Seq("headervalue 1"))), "body 1")
 
-      JiraExceptionProcessor.reportError(r, new PlayException("test play exception", "with ID"))
+      JiraExceptionProcessor.reportError(r, new PlayException("Issue from automatic test for play exception", "with ID"))
     }
 
+    "report an error without a request" in {
+      JiraExceptionProcessor.reportError(ErrorInformation("Issue for automatic test without request", "test description", "comment"))
+    }
+    
+  }
+  
+  "ErrorInformation" should {
+    
+    "have an alternative apply method" in {
+      val m = "test"
+      val t = new Exception(m)
+      val c = "comment"
+      
+      val e = ErrorInformation(t, c)
+      
+      e.summary === m
+      e.description === JiraExceptionProcessor.getStackTraceString(t)
+      e.comment === c
+    }
   }
 }
