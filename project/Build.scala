@@ -5,10 +5,10 @@ import play.Project._
 object ApplicationBuild extends Build {
 
   val appName = "jira-exception-processor"
-  val appVersion = "3.0.4"
+  val appVersion = "3.1.4"
 
   val appDependencies = Seq(
-    "play.modules.mailer" %% "play-mailer" % "1.1.0")
+    "play.modules.mailer" %% "play-mailer" % "2.1.1")
 
   def rhinoflyRepo(version: String) = {
     val repo = if (version endsWith "SNAPSHOT") "snapshot" else "release"

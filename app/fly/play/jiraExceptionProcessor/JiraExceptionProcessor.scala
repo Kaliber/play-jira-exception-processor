@@ -19,6 +19,7 @@ import play.modules.mailer.Email
 import play.modules.mailer.EmailAddress
 import play.modules.mailer.Recipient
 import scala.language.postfixOps
+import scala.concurrent.Future
 
 object JiraExceptionProcessor {
 
@@ -73,9 +74,9 @@ object JiraExceptionProcessor {
                   .flatMap {
                     //add the comment
                     case Right(playProjectIssue) => Jira.addComment(playProjectIssue.key.get, comment)
-                    case Left(error) => Promise pure Left(error)
+                    case Left(error) => Future successful Left(error)
                   }
-              case Left(error) => Promise pure Left(error)
+              case Left(error) => Future successful Left(error)
 
             }
 

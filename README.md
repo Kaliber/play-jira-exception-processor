@@ -5,8 +5,8 @@ Each new project we start is being developed in Scala. Therefore, we are in need
 Are you the Scala programmer we are looking for? Take a look at the [job description](http://rhinofly.nl/vacature-scala.html) (in Dutch) and give the Scala puzzle a try! Send us your solution and you will be invited for a job interview.
 * * *
 
-Jira exception processor module for Play 2.1
-============================================
+Jira exception processor module for Play 2.2.x
+==============================================
 
 This module is created for internal use. If there is any interest in this feature for play, please contact us so we 
 can make it more portable.
@@ -18,7 +18,7 @@ In the `Build.scala` file add the dependency
 
 ``` scala
   val appDependencies = Seq(
-    "nl.rhinofly" %% "jira-exception-processor" % "3.0.4")
+    "nl.rhinofly" %% "jira-exception-processor" % "3.1.4")
 
   val main = play.Project(appName, appVersion, appDependencies, mainLang = SCALA).settings(
     resolvers += "Rhinofly Internal Repository" at "http://maven-repository.rhinofly.net:8081/artifactory/libs-release-local")
