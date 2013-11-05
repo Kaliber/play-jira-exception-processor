@@ -17,7 +17,7 @@ Installation
 In the `build.sbt` file add the following lines:
 
 ``` scala
-appDependencies += "nl.rhinofly" %% "jira-exception-processor" % "3.1.4"
+libraryDependencies += "nl.rhinofly" %% "jira-exception-processor" % "3.1.4"
 
 resolvers += "Rhinofly Internal Repository" at "http://maven-repository.rhinofly.net:8081/artifactory/libs-release-local"
 
