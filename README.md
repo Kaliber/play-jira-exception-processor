@@ -14,19 +14,7 @@ can make it more portable.
 Installation
 ------------
 
-In the `Build.scala` file add the dependency
-
-``` scala
-  val appDependencies = Seq(
-    "nl.rhinofly" %% "jira-exception-processor" % "3.1.4")
-
-  val main = play.Project(appName, appVersion, appDependencies, mainLang = SCALA).settings(
-    resolvers += "Rhinofly Internal Repository" at "http://maven-repository.rhinofly.net:8081/artifactory/libs-release-local")
-
-  }
-```
-
-Or in the `build.sbt` file
+In the `build.sbt` file add the following lines:
 
 ``` scala
 appDependencies += "nl.rhinofly" %% "jira-exception-processor" % "3.1.4"
