@@ -5,11 +5,10 @@ Each new project we start is being developed in Scala. Therefore, we are in need
 Are you the Scala programmer we are looking for? Take a look at the [job description](http://rhinofly.nl/vacatures/vacature-scala.html) (in Dutch) and give the Scala puzzle a try! Send us your solution and you will be invited for a job interview.
 * * *
 
-Jira exception processor module for Play 2.2.x
+Jira exception processor module for Play 2.3.x
 ==============================================
 
-This module is created for internal use. If there is any interest in this feature for play, please contact us so we 
-can make it more portable.
+This module is created for internal use. If there is any interest in this feature for play, please contact us so we can make it more portable.
 
 Installation
 ------------
@@ -17,7 +16,7 @@ Installation
 In the `build.sbt` file add the following lines:
 
 ``` scala
-libraryDependencies += "nl.rhinofly" %% "jira-exception-processor" % "3.1.4"
+libraryDependencies += "nl.rhinofly" %% "jira-exception-processor" % "3.2.0"
 
 resolvers += "Rhinofly Internal Repository" at "http://maven-repository.rhinofly.net:8081/artifactory/libs-release-local"
 
@@ -50,14 +49,13 @@ jira.exceptionProcessor.mail.to.name=Play
 jira.exceptionProcessor.mail.to.address="play+error@rhinofly.nl"
 
 # Used by the SES plugin
-mail.smtp.failTo="failto+test@rhinofly.net"
+mail.failTo="failto+test@rhinofly.net"
 
-mail.smtp.host=email-smtp.us-east-1.amazonaws.com
-mail.smtp.port=465
-mail.smtp.username="username"
-mail.smtp.password="password"
+mail.host=email-smtp.us-east-1.amazonaws.com
+mail.port=465
+mail.username="username"
+mail.password="password"
 ```
-
 
 Usage
 -----
@@ -87,8 +85,13 @@ JiraExceptionProcessor.reportError(ErrorInformation(throwable, "comment"))
 Testing
 -------
 
-In order to test put the above configuration in `/test/conf/application.conf`. 
-Note that this directory is present in `.gitignore` in order to prevent credentials 
+In order to test put a JIRA endpoint and credentials in `/src/test/conf/overrides.conf`:
+
+    jira.username="xxx"
+    jira.password="yyy"
+    jira.endpoint="https://zzz.atlassian.net/rest/api/2/"
+
+Note that this file is present in `.gitignore` in order to prevent credentials 
 from ending up in Github.
 
 
