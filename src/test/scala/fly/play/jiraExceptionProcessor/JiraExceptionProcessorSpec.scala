@@ -5,9 +5,10 @@ import play.api.test._
 import play.api.PlayException
 
 object JiraExceptionProcessorSpec extends Specification with Before {
-  def f = FakeApplication(new java.io.File("./test/"))
+  def f = FakeApplication(new java.io.File("./src/test"))
 
   def before = play.api.Play.start(f)
+
 
   "Jira" should {
     "find the 'Hash' custom field name" in {
@@ -31,7 +32,7 @@ object JiraExceptionProcessorSpec extends Specification with Before {
       val r = FakeRequest("GET", "http://testuri.nl/?something", FakeHeaders(Seq("testheader" -> Seq("headervalue"))), "body")
 
       JiraExceptionProcessor.reportError(r, new Exception("Issue from automatic test"))
-      
+
       ok
     }
 
@@ -64,7 +65,7 @@ object JiraExceptionProcessorSpec extends Specification with Before {
       JiraExceptionProcessor.reportError(r, new Exception("Issue from automatic test with more than 250 characters and a newline               \n                                                                                                                                                                                       end"))
       ok
     }
-    
+
     "report an error as similar if it's a PlayException" in {
       val r = FakeRequest("GET", "http://testuri.nl/?something", FakeHeaders(Seq("testheader" -> Seq("headervalue 1"))), "body 1")
 
@@ -76,18 +77,18 @@ object JiraExceptionProcessorSpec extends Specification with Before {
       JiraExceptionProcessor.reportError(ErrorInformation("Issue for automatic test without request", "test description", "comment"))
       ok
     }
-    
+
   }
-  
+
   "ErrorInformation" should {
-    
+
     "have an alternative apply method" in {
       val m = "test"
       val t = new Exception(m)
       val c = "comment"
-      
+
       val e = ErrorInformation(t, c)
-      
+
       e.summary === m
       e.description === JiraExceptionProcessor.getStackTraceString(t)
       e.comment === c

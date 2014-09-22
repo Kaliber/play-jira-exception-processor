@@ -4,14 +4,12 @@ import play.api.Play.current
 import play.api.libs.json.{ Format, JsObject }
 import play.api.libs.json.Json.toJson
 import play.api.libs.json.Reads
-import play.api.libs.ws.{ Response, WS }
-import com.ning.http.client.Realm.AuthScheme
+import play.api.libs.ws.{ WSResponse, WS, WSAuthScheme }
 import play.api.libs.json.JsValue
 import play.Logger
 import play.api.Application
 import play.modules.mailer.PlayConfiguration
 import play.api.libs.concurrent.Execution.Implicits._
-import play.api.libs.concurrent.Waiting
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.concurrent.Future
@@ -65,7 +63,7 @@ object Jira {
             throw new Exception("Problem retrieving the 'Hash' custom field ('%s'): %s" format (status, response.body))
         }
       }
-    
+
     Await.result(customFieldPromise, 10 seconds)
   }
 
@@ -103,7 +101,7 @@ object Jira {
 
   lazy val projectId = (project \ "id").as[String]
 
-  
+
   /**
    * Utility method that is used to perform requests
    */
@@ -114,14 +112,14 @@ object Jira {
 
     WS
       .url(completeUrl)
-      .withAuth(apiUsername, apiPassword, AuthScheme.BASIC)
+      .withAuth(apiUsername, apiPassword, WSAuthScheme.BASIC)
   }
 
   /**
    * Utility method that will handle errors and unknown status codes
    */
-  def handleResponse[T](handler: PartialFunction[(Int, Response), Either[Error, T]])(response: Response): Either[Error, T] = {
-    val defaultHandler: PartialFunction[(Int, Response), Either[Error, T]] = {
+  def handleResponse[T](handler: PartialFunction[(Int, WSResponse), Either[Error, T]])(response: WSResponse): Either[Error, T] = {
+    val defaultHandler: PartialFunction[(Int, WSResponse), Either[Error, T]] = {
       case (400, response) => Left(Error.fromJson(400, response.json))
       case (other, response) => Left(Error(other, Seq("Unknown error", response.body)))
     }
@@ -151,7 +149,7 @@ object Jira {
           ("project = %s AND component = %s AND resolution = Unresolved AND %s = %s ORDER BY priority DESC"
             .format(projectKey, componentId, hashCustomFieldName, hash)),
         "fields" -> ("summary,key,description,%s" format hashCustomField))
-        
+
       .get() map handleResponse {
         case (200, response) => {
           Right((response.json \ "issues").as[Seq[PlayProjectIssue]].headOption)
@@ -166,5 +164,5 @@ object Jira {
       case (201, response) => Right(response.json.as[PlayProjectIssue])
     }
   }
-  
+
 }

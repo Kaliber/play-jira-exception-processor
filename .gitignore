@@ -9,5 +9,5 @@ dist
 /.classpath
 /.project
 /.settings
-test/conf
+src/test/conf/overrides.conf
 .target
