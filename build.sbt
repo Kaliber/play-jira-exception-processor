@@ -1,6 +1,6 @@
 name := "jira-exception-processor"
 
-version := "3.2.0"
+version := "3.2.1"
 
 scalaVersion := "2.11.1"
 
@@ -20,9 +20,13 @@ libraryDependencies ++= Seq(
   "nl.rhinofly" %% "play-mailer" % "2.2.0"
 )
 
+organization := "nl.rhinofly"
+
 publishTo := rhinoflyRepo(version.value)
 
 def rhinoflyRepo(version: String) = {
     val repo = if (version endsWith "SNAPSHOT") "snapshot" else "release"
     Some("Rhinofly Internal " + repo.capitalize + " Repository" at "http://maven-repository.rhinofly.net:8081/artifactory/libs-" + repo + "-local")
 }
+
+credentials += Credentials(Path.userHome / ".ivy2" / ".credentials")
