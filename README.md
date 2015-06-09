@@ -48,6 +48,9 @@ mail.host=email-smtp.us-east-1.amazonaws.com
 mail.port=465
 mail.username="username"
 mail.password="password"
+
+# Process exceptions from the actor system
+akka.actor.guardian-supervisor-strategy = "fly.play.jiraExceptionProcessor.ReportingSupervisorStrategy"
 ```
 
 Usage
