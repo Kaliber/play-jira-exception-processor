@@ -1,28 +1,27 @@
 name := "jira-exception-processor"
 
-version := "3.2.1"
-
-scalaVersion := "2.11.1"
-
-crossScalaVersions := Seq("2.11.1", "2.10.4")
+scalaVersion := "2.11.6"
 
 resolvers ++= Seq(
   "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/",
   rhinoflyRepo("RELEASE").get
 )
 
-scalacOptions += "-deprecation"
-
 libraryDependencies ++= Seq(
-  "com.typesafe.play" %% "play" % "2.3.0" % "provided",
-  "com.typesafe.play" %% "play-ws" % "2.3.0" % "provided",
-  "com.typesafe.play" %% "play-test" % "2.3.0" % "test",
-  "nl.rhinofly" %% "play-mailer" % "2.2.0"
+  "com.typesafe.play" %% "play" % "2.4.2" % "provided",
+  "com.typesafe.play" %% "play-ws" % "2.4.2" % "provided",
+  "com.typesafe.play" %% "play-test" % "2.4.2" % "test",
+  "org.specs2" %% "specs2-core" % "3.6.2" % "test",
+  "nl.rhinofly" %% "play-mailer" % "3.1.0"
 )
 
 organization := "nl.rhinofly"
 
 publishTo := rhinoflyRepo(version.value)
+
+fork in Test := true
+
+javaOptions in Test += "-Dconfig.file=src/test/conf/application.conf"
 
 def rhinoflyRepo(version: String) = {
     val repo = if (version endsWith "SNAPSHOT") "snapshot" else "release"

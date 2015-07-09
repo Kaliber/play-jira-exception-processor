@@ -5,7 +5,7 @@ import play.api.test._
 import play.api.PlayException
 
 object JiraExceptionProcessorSpec extends Specification with Before {
-  def f = FakeApplication(new java.io.File("./src/test"))
+  def f = FakeApplication()
 
   def before = play.api.Play.start(f)
 
@@ -29,7 +29,7 @@ object JiraExceptionProcessorSpec extends Specification with Before {
   "JiraExceptionProcessor" should {
     "report an error and add a comment" in {
 
-      val r = FakeRequest("GET", "http://testuri.nl/?something", FakeHeaders(Seq("testheader" -> Seq("headervalue"))), "body")
+      val r = FakeRequest("GET", "http://testuri.nl/?something", FakeHeaders(Seq("testheader" -> "headervalue")), "body")
 
       JiraExceptionProcessor.reportError(r, new Exception("Issue from automatic test"))
 
@@ -44,7 +44,7 @@ object JiraExceptionProcessorSpec extends Specification with Before {
 
     "report an error or add a comment with new line in summary" in {
 
-      val r = FakeRequest("GET", "http://testuri.nl/?something", FakeHeaders(Seq("testheader" -> Seq("headervalue"))), "body")
+      val r = FakeRequest("GET", "http://testuri.nl/?something", FakeHeaders(Seq("testheader" -> "headervalue")), "body")
 
       JiraExceptionProcessor.reportError(r, new Exception("Issue from automatic test with newline\nhere"))
       ok
@@ -52,7 +52,7 @@ object JiraExceptionProcessorSpec extends Specification with Before {
 
     "report an error or add a comment with weird exception information" in {
 
-      val r = FakeRequest("GET", "http://testuri.nl/?something", FakeHeaders(Seq("testheader" -> Seq("headervalue"))), "body")
+      val r = FakeRequest("GET", "http://testuri.nl/?something", FakeHeaders(Seq("testheader" -> "headervalue")), "body")
 
       JiraExceptionProcessor.reportError(r, new Exception("Issue from automatic test with more than 250 characters                                                                                                                                                                                                       end"))
       ok
@@ -60,14 +60,14 @@ object JiraExceptionProcessorSpec extends Specification with Before {
 
     "report an error or add a comment with weird exception information" in {
 
-      val r = FakeRequest("GET", "http://testuri.nl/?something", FakeHeaders(Seq("testheader" -> Seq("headervalue"))), "body")
+      val r = FakeRequest("GET", "http://testuri.nl/?something", FakeHeaders(Seq("testheader" -> "headervalue")), "body")
 
       JiraExceptionProcessor.reportError(r, new Exception("Issue from automatic test with more than 250 characters and a newline               \n                                                                                                                                                                                       end"))
       ok
     }
 
     "report an error as similar if it's a PlayException" in {
-      val r = FakeRequest("GET", "http://testuri.nl/?something", FakeHeaders(Seq("testheader" -> Seq("headervalue 1"))), "body 1")
+      val r = FakeRequest("GET", "http://testuri.nl/?something", FakeHeaders(Seq("testheader" -> "headervalue 1")), "body 1")
 
       JiraExceptionProcessor.reportError(r, new PlayException("Issue from automatic test for play exception", "with ID"))
       ok

@@ -20,21 +20,21 @@ object Jira {
   /**
    * The endpoint, for example: https://jira.rhinofly.net/rpc/json-rpc/jirasoapservice-v2/
    */
-  val endpoint = PlayConfiguration("jira.endpoint")
-  val apiUsername = PlayConfiguration("jira.username")
-  val apiPassword = PlayConfiguration("jira.password")
+  lazy val endpoint = PlayConfiguration("jira.endpoint")
+  lazy val apiUsername = PlayConfiguration("jira.username")
+  lazy val apiPassword = PlayConfiguration("jira.password")
 
   /**
    * Fields needed to create and retrieve issues
    */
-  val projectKey = PlayConfiguration("jira.exceptionProcessor.projectKey")
-  val componentName = PlayConfiguration("jira.exceptionProcessor.componentName")
-  val configuration = implicitly[Application].configuration
-  val hashCustomFieldName =
+  lazy val projectKey = PlayConfiguration("jira.exceptionProcessor.projectKey")
+  lazy val componentName = PlayConfiguration("jira.exceptionProcessor.componentName")
+  lazy val configuration = implicitly[Application].configuration
+  lazy val hashCustomFieldName =
     configuration
       .getString("jira.exceptionProcessor.hashCustomFieldName")
       .getOrElse("Hash")
-  val issueType =
+  lazy val issueType =
     configuration
       .getString("jira.exceptionProcessor.issueType")
       .getOrElse("1")
@@ -164,5 +164,4 @@ object Jira {
       case (201, response) => Right(response.json.as[PlayProjectIssue])
     }
   }
-
 }
