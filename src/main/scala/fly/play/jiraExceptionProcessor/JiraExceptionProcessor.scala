@@ -1,40 +1,108 @@
 package fly.play.jiraExceptionProcessor
 
-import play.api.mvc.RequestHeader
 import java.io.StringWriter
 import java.io.PrintWriter
-import play.api.mvc.Session
-import play.api.Play.current
-import java.security.MessageDigest
 import javax.mail.Message
+import net.kaliber.mailer.Email
+import net.kaliber.mailer.EmailAddress
+import net.kaliber.mailer.Mailer
+import net.kaliber.mailer.Session
+import net.kaliber.mailer.Recipient
+import play.api.Configuration
+import play.api.Logger
 import play.api.PlayException
-import play.Logger
-import play.api.libs.concurrent.Promise
-import play.modules.mailer.PlayConfiguration
-import play.api.libs.concurrent.Execution.Implicits._
+import play.api.libs.ws.WSClient
+import play.api.mvc.RequestHeader
 import scala.concurrent.Await
-import scala.concurrent.duration._
-import play.modules.mailer.Mailer
-import play.modules.mailer.Email
-import play.modules.mailer.EmailAddress
-import play.modules.mailer.Recipient
-import scala.language.postfixOps
+import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
+import scala.concurrent.duration._
 
-object JiraExceptionProcessor {
+class JiraExceptionProcessor(client: WSClient, configuration: Configuration)(implicit ec: ExecutionContext) {
 
-  def reportError(request: RequestHeader, ex: Throwable): Unit = {
+  // these are lazy so the configuration can have missing settings when disabled
+  private lazy val processorConfiguration = JiraExceptionProcessorConfiguration fromConfiguration configuration
+  private lazy val (jira, mailer) = (
+    new Jira(client, processorConfiguration),
+    new Mailer(Session fromConfiguration configuration)
+  )
+
+  /*
+   * Public functions do not return a Future. Implementers might forget
+   * to process the result of the future and with that fail to catch any
+   * reporting problems.
+   */
+
+  def reportError(request: RequestHeader, ex: Throwable): Unit =
     reportError(ErrorInformation(ex, getRequestString(request)))
+
+  def reportError(information: ErrorInformation): Unit =
+    Await.result(actualReport(information), 10.seconds)
+
+  private def actualReport(information: ErrorInformation): Future[Unit] = {
+    val enabled = configuration.getBoolean("jira.exceptionProcessor.enabled").getOrElse(true)
+
+    Logger.error("Logged from Jira exception processor (enabled = $enabled)")
+    Logger.error("Summary: "       + information.summary)
+    Logger.error("Description: \n" + information.description)
+    Logger.error("Comment: \n"     + information.comment)
+
+    if (!enabled) return Future.successful(())
+
+
+    val result =
+      reportToJira(information)
+        .recover {
+          case e: PlayException => throw e
+          case t: Throwable     => Left(toError(t, information))
+        }
+
+    result flatMap {
+      case Left(error) => sendEmail(error)
+      case Right(success) =>
+        /* error reported */
+        Future.successful(())
+    }
   }
 
-  def getStackTraceString(ex: Throwable): String = {
-    val s = new StringWriter
-    val p = new PrintWriter(s)
-    ex.printStackTrace(p)
-    s.toString
+  private def toError(t: Throwable, information: ErrorInformation) = {
+    val ErrorInformation(summary, description, comment) = information
+
+    Error(0,
+      Seq(
+        "Exception while calling Jira:",
+        t.getMessage,
+        JiraExceptionProcessor.getStackTraceString(t),
+        "Original error:",
+        summary,
+        description,
+        comment
+      )
+    )
   }
-  
-  def getRequestString(request: RequestHeader): String = {
+
+  private def reportToJira(information: ErrorInformation) = {
+    import JiraExceptionProcessor.Helper
+
+    val ErrorInformation(summary, description, comment) = information
+    val hash = information.hash
+
+    val Helper(result) =
+      for {
+        optionalIssue <- Helper(jira.findIssues(hash))
+        issue         <-
+          optionalIssue match {
+            case Some(issue) => Helper(issue)
+            case None        =>
+              Helper(jira createIssue PlayProjectIssue(summary, description, hash))
+          }
+        _             <- Helper(jira.addComment(issue.key.get, information.comment))
+      } yield ()
+
+    result
+  }
+
+  private def getRequestString(request: RequestHeader): String = {
 
     "uri: " + request.uri + "\n" +
       "path: " + request.path + "\n" +
@@ -48,77 +116,57 @@ object JiraExceptionProcessor {
 
   }
 
-  def keyValue(key: String, value: String): String = "   " + key + ": " + value
-  def keyValueSeq(key: String, value: Seq[String]): String = keyValue(key, value.mkString(", "))
+  private def keyValue(key: String, value: String): String = "   " + key + ": " + value
+  private def keyValueSeq(key: String, value: Seq[String]): String = keyValue(key, value.mkString(", "))
 
-  def reportError(information: ErrorInformation): Unit = {
-    if (!PlayConfiguration("jira.exceptionProcessor.enabled").toBoolean) return
-
-    val summary = information.summary
-    val description = information.description
-
-    val result: Either[Error, Success] =
-      try {
-
-        val hash = information.hash
-        val comment = information.comment
-
-        val result =
-          Jira.findIssues(hash)
-            .flatMap {
-              //we found an issue, add the comment
-              case Right(Some(issue)) => Jira.addComment(issue.key.get, comment)
-              //no issue found, create the issue
-              case Right(_) =>
-                (Jira createIssue PlayProjectIssue(None, Some(summary), Some(description), Some(hash)))
-                  .flatMap {
-                    //add the comment
-                    case Right(playProjectIssue) => Jira.addComment(playProjectIssue.key.get, comment)
-                    case Left(error) => Future successful Left(error)
-                  }
-              case Left(error) => Future successful Left(error)
-
-            }
-
-        Await.result(result, 10 seconds)
-      } catch {
-        case e: PlayException => throw e
-        case e: Throwable => Left(Error(0, Seq(
-          "Exception while calling Jira:",
-          e.getMessage,
-          getStackTraceString(e),
-          "Original error:",
-          summary,
-          description)))
-      }
-
-    result match {
-      case Left(error) => sendEmail(error)
-      case Right(success) => /* error reported */
-    }
-  }
-
-  def sendEmail(error: Error) = {
-    val message = "Status: " + error.status + "\n" +
-      error.messages.mkString("\n\n")
+  private def sendEmail(error: Error):Future[Unit] = {
+    val message = s"""|Status: ${error.status}
+                      |${error.messages.mkString("\n\n")}""".stripMargin
 
     Logger error "Failed to report to Jira " + message
 
-    val fromName = PlayConfiguration("jira.exceptionProcessor.mail.from.name")
-    val fromAddress = PlayConfiguration("jira.exceptionProcessor.mail.from.address")
-    val toName = PlayConfiguration("jira.exceptionProcessor.mail.to.name")
-    val toAddress = PlayConfiguration("jira.exceptionProcessor.mail.to.address")
+    mailer.sendEmail(
+      Email(
+        subject = s"Failed to report error for project ${processorConfiguration.projectKey} and component ${processorConfiguration.componentName}",
+        from = EmailAddress(processorConfiguration.fromName, processorConfiguration.fromAddress),
+        replyTo = None,
+        recipients = List(
+          Recipient(Message.RecipientType.TO, EmailAddress(processorConfiguration.toName, processorConfiguration.toAddress))
+        ),
+        text = message,
+        htmlText = message.replace("\n", "<br />"),
+        attachments = Seq.empty
+      )
+    )
+  }
+}
 
-    Mailer.sendEmail(Email(
-      subject = "Failed to report error for project %s and component %s" format (Jira.projectKey, Jira.componentName),
-      from = EmailAddress(fromName, fromAddress),
-      replyTo = None,
-      recipients = List(
-        Recipient(Message.RecipientType.TO, EmailAddress(toName, toAddress))),
-      text = message,
-      htmlText = message.replace("\n", "<br />"),
-      attachments = Seq.empty))
+object JiraExceptionProcessor {
+  def getStackTraceString(ex: Throwable): String = {
+    val s = new StringWriter
+    val p = new PrintWriter(s)
+    ex.printStackTrace(p)
+    s.toString
   }
 
+  /**
+   * This wrapped is used to be able to map and flatMap on a more complex type
+   */
+  private case class Helper[A](underlying: Future[Either[Error, A]]) {
+    def flatMap[B](f: A => Helper[B])(implicit ec: ExecutionContext): Helper[B] =
+      Helper(
+        underlying.flatMap {
+          case Right(a) => f(a).underlying
+          case Left(error) => Future successful Left(error)
+        }
+      )
+
+    def map[B](f: A => B)(implicit ec: ExecutionContext): Helper[B] =
+      flatMap(a => Helper(f(a)))
+  }
+
+  private object Helper {
+    def apply[A](a: A): Helper[A] = Helper(Future successful Right(a))
+  }
 }
 

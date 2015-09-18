@@ -1,18 +1,8 @@
 package fly.play.jiraExceptionProcessor
 
-import play.api.Play.current
-import play.api.Application
+import java.security.MessageDigest
 import play.api.libs.json.Json.toJson
 import play.api.libs.json._
-import play.api.libs.functional.syntax._
-import play.api.libs.functional.InvariantFunctor
-import play.api.libs.functional.Functor
-import play.api.libs.functional.ContravariantFunctor
-import scala.language.higherKinds
-import scala.language.postfixOps
-import java.security.MessageDigest
-import java.io.StringWriter
-import java.io.PrintWriter
 
 case class Error(status: Int, messages: Seq[String])
 
@@ -25,20 +15,25 @@ object Error {
         })
 }
 
-trait Success
-object Success extends Success
-
 case class PlayProjectIssue(
   key: Option[String],
   summary: Option[String],
   description: Option[String],
   hash: Option[String]) {
-
 }
 
 object PlayProjectIssue extends ((Option[String], Option[String], Option[String], Option[String]) => PlayProjectIssue) {
 
-  implicit object format extends Format[PlayProjectIssue] {
+  def apply(summary: String, description: String, hash: String): PlayProjectIssue =
+    PlayProjectIssue(None, Some(summary), Some(description), Some(hash))
+
+  def format(
+    projectId: String,
+    componentId: String,
+    hashCustomFieldName: String,
+    issueType: String
+  ): Format[PlayProjectIssue] = new Format[PlayProjectIssue] {
+
     def reads(json: JsValue) = {
 
       val fields = json \ "fields"
@@ -47,27 +42,30 @@ object PlayProjectIssue extends ((Option[String], Option[String], Option[String]
         (json \ "key").asOpt[String],
         (fields \ "summary").asOpt[String],
         (fields \ "description").asOpt[String],
-        (fields \ Jira.hashCustomField).asOpt[String]))
+        (fields \ hashCustomFieldName).asOpt[String]))
     }
 
     def writes(playProjectIssue: PlayProjectIssue) = {
 
-      def field(pairs: (String, String)*): JsObject =
+      def field[T : Writes](pairs: (String, T)*): JsObject =
         JsObject(pairs.map { case (key, value) => key -> toJson(value) })
       def map(pairs: (String, JsValue)*): JsObject =
         JsObject(pairs)
 
       map(
         "fields" -> map(
-          "project" -> field("id" -> Jira.projectId),
+          "project" -> field("id" -> projectId),
           "summary" -> toJson(trimSummary(playProjectIssue.summary)),
-          "description" -> toJson(playProjectIssue.description),
-          "issuetype" -> field("id" -> Jira.issueType),
-          "components" -> JsArray(Seq(field("id" -> Jira.componentId))),
-          Jira.hashCustomField -> toJson(playProjectIssue.hash)))
+          "description" -> toJson(
+            playProjectIssue.summary.getOrElse("") + "\n" +
+            playProjectIssue.description.getOrElse("")
+          ),
+          "issuetype" -> field("id" -> issueType),
+          "components" -> JsArray(Seq(field("id" -> componentId))),
+          hashCustomFieldName -> toJson(playProjectIssue.hash)))
     }
 
-    def trimSummary(summary: Option[String]): Option[String] =
+    private def trimSummary(summary: Option[String]): Option[String] =
       summary.map(_.takeWhile(_ != '\n').take(250))
   }
 }
@@ -76,16 +74,18 @@ case class ErrorInformation(summary: String, description: String, comment: Strin
 
   lazy val hash = createHash(removePlayId(description))
 
-  def removePlayId(message: String) =
+  private def removePlayId(message: String) =
     message.replaceFirst("""@[^\s]*""", "")
 
-  def createHash(str: String): String =
+  private def createHash(str: String): String =
     MessageDigest.getInstance("MD5").digest(str.getBytes).map("%02X" format _).mkString
 }
 
 object ErrorInformation extends ((String, String, String) => ErrorInformation) {
 
   def apply(ex: Throwable, comment: String): ErrorInformation =
-    ErrorInformation(ex.getMessage, JiraExceptionProcessor.getStackTraceString(ex), comment)
+    ErrorInformation(extractMessage(ex), JiraExceptionProcessor.getStackTraceString(ex), comment)
 
+  private def extractMessage(ex: Throwable): String =
+    ex.getMessage + Option(ex.getCause).map("\n=== Caused by ===\n" + extractMessage(_)).getOrElse("")
 }
