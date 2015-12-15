@@ -3,7 +3,6 @@ name := "jira-exception-processor"
 scalaVersion := "2.11.6"
 
 resolvers ++= Seq(
-  "Typesafe repository" at "http://dl.bintray.com/typesafe/maven-releases/",
   "Kaliber Repository" at "https://jars.kaliber.io/artifactory/libs-release-local"
 )
 
