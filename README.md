@@ -9,9 +9,9 @@ Installation
 In the `build.sbt` file add the following lines:
 
 ``` scala
-libraryDependencies += "nl.rhinofly" %% "jira-exception-processor" % "3.3.0"
+libraryDependencies += "net.kaliber" %% "jira-exception-processor" % "4.0.0"
 
-resolvers += "Rhinofly Internal Repository" at "http://maven-repository.rhinofly.net:8081/artifactory/libs-release-local"
+resolvers += "Kaliber Repository" at "https://jars.kaliber.io/artifactory/libs-release-local"
 
 ```
 
@@ -24,7 +24,7 @@ In the `application.conf` file add the following pieces of information:
 # Jira information, needed to report the errors to Jira
 jira.username=username
 jira.password="password"
-jira.endpoint="https://rhinofly.atlassian.net/rest/api/2/"
+jira.endpoint="https://organisation.atlassian.net/rest/api/2/"
 
 # Information needed by the exception processor
 jira.exceptionProcessor.enabled=true
@@ -56,40 +56,36 @@ akka.actor.guardian-supervisor-strategy = "fly.play.jiraExceptionProcessor.Repor
 Usage
 -----
 
-Create a `Global.scala` file in the root package with the following contents:
+The actual usage depends on the strategy you are using for creating Play Applications.
 
 ``` scala
-import fly.play.jiraExceptionProcessor.JiraExceptionProcessor
+  val jiraExceptionProcessor =
+    new JiraExceptionProcessor(wsClient, playConfiguration)
 
-object Global extends GlobalSettings {
-	override def onError(request:RequestHeader, ex:Throwable) = {
-	  JiraExceptionProcessor.reportError(request, ex)
-	  super.onError(request, ex)
-	}
+  def onError(request:RequestHeader, ex:Throwable) =
+    jiraExceptionProcessor.reportError(request, ex)
 }
 ```
 
-Other examples:
+You can also report custom errors:
 
 ``` scala
-import fly.play.jiraExceptionProcessor.JiraExceptionProcessor
-
-JiraExceptionProcessor.reportError(ErrorInformation("summary", "description", "comment"))
-JiraExceptionProcessor.reportError(ErrorInformation(throwable, "comment"))
+jiraExceptionProcessor.reportError(ErrorInformation("summary", "description", "comment"))
+jiraExceptionProcessor.reportError(ErrorInformation(throwable, "comment"))
 ```
 
 Testing
 -------
 
-In order to test put a JIRA endpoint and credentials in `/src/test/conf/overrides.conf`:
+In order to test put a JIRA endpoint and credentials in `/src/test/resources/conf/overrides.conf`:
 
     jira.username="xxx"
     jira.password="yyy"
     jira.endpoint="https://zzz.atlassian.net/rest/api/2/"
 
-Note that this file is present in `.gitignore` in order to prevent credentials 
+Note that this file is present in `.gitignore` in order to prevent credentials
 from ending up in Github.
 
-
+You can use [DevNull SMTP](http://www.aboutmyip.com/AboutMyXApp/DevNullSmtp.jsp) to test the emails.
 
 

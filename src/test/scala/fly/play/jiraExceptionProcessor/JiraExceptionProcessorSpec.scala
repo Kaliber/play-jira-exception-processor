@@ -1,97 +1,113 @@
 package fly.play.jiraExceptionProcessor
 
+import akka.actor.Actor
+import akka.actor.ActorSystem
+import akka.actor.Props
+import akka.util.Timeout
 import org.specs2.mutable.{ Specification, Before }
-import play.api.test._
+import play.api.ApplicationLoader
+import play.api.Configuration
+import play.api.Environment
+import play.api.Mode
+import play.api.Play.current
 import play.api.PlayException
+import play.api.libs.ws.WS
+import play.api.test._
+import scala.concurrent.Await
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
 
 object JiraExceptionProcessorSpec extends Specification with Before {
-  def f = FakeApplication()
+  def f = {
+    val context = ApplicationLoader.createContext(
+      Environment(new java.io.File("."), getClass.getClassLoader, Mode.Test)
+    )
+    ApplicationLoader(context) load context
+  }
 
   def before = play.api.Play.start(f)
 
+  for (i <- 1 to 2) {
+    s"JiraExceptionProcessor $i" should {
 
-  "Jira" should {
-    "find the 'Hash' custom field name" in {
-      val hashCustomField = Jira.hashCustomField
-      (hashCustomField must not be empty) and
-        (hashCustomField must startWith("customfield"))
-    }
-    "find the component id" in {
-      val componentId = Jira.componentId
-      componentId must not be empty
-    }
-    "find the project id" in {
-      val projectId = Jira.projectId
-      projectId must not be empty
-    }
-  }
+      val jiraExceptionProcessor = new JiraExceptionProcessor(WS.client, current.configuration)
 
-  "JiraExceptionProcessor" should {
-    "report an error and add a comment" in {
+      "report an error and add a comment" in {
 
-      val r = FakeRequest("GET", "http://testuri.nl/?something", FakeHeaders(Seq("testheader" -> "headervalue")), "body")
+        val r = FakeRequest("GET", "http://testuri.nl/?something", FakeHeaders(Seq("testheader" -> "headervalue")), "body")
 
-      JiraExceptionProcessor.reportError(r, new Exception("Issue from automatic test"))
+        jiraExceptionProcessor.reportError(r, new Exception("Issue from automatic test"))
 
-      ok
-    }
+        ok
+      }
 
-    "send an email in case of an error while reporting" in {
-      val e = Error(0, Seq("Dit is een test om te kijken of er een mailtje verstuurd wordt wanneer er iets mis gaat met de automatische error reporting", "[fake stack trace]"))
-      JiraExceptionProcessor.sendEmail(e)
-      ok
-    }
+      "send an email in case of an error while reporting" in {
+        val brokenConfiguration = current.configuration ++ Configuration(
+          "jira.endpoint" -> "https://this-is-wrong.atlassian.net/rest/api/2/"
+        )
 
-    "report an error or add a comment with new line in summary" in {
+        val jiraExceptionProcessor = new JiraExceptionProcessor(WS.client, brokenConfiguration)
+        val e = ErrorInformation("Dit is een test om te kijken of er een mailtje verstuurd wordt wanneer er iets mis gaat met de automatische error reporting", "test description", "[fake stack trace]")
+        jiraExceptionProcessor.reportError(e)
+        ok
+      }
 
-      val r = FakeRequest("GET", "http://testuri.nl/?something", FakeHeaders(Seq("testheader" -> "headervalue")), "body")
+      "report an error or add a comment with new line in summary" in {
 
-      JiraExceptionProcessor.reportError(r, new Exception("Issue from automatic test with newline\nhere"))
-      ok
-    }
+        val r = FakeRequest("GET", "http://testuri.nl/?something", FakeHeaders(Seq("testheader" -> "headervalue")), "body")
 
-    "report an error or add a comment with weird exception information" in {
+        jiraExceptionProcessor.reportError(r, new Exception("Issue from automatic test with newline\nhere"))
+        ok
+      }
 
-      val r = FakeRequest("GET", "http://testuri.nl/?something", FakeHeaders(Seq("testheader" -> "headervalue")), "body")
+      "report an error or add a comment with weird exception information" in {
 
-      JiraExceptionProcessor.reportError(r, new Exception("Issue from automatic test with more than 250 characters                                                                                                                                                                                                       end"))
-      ok
-    }
+        val r = FakeRequest("GET", "http://testuri.nl/?something", FakeHeaders(Seq("testheader" -> "headervalue")), "body")
 
-    "report an error or add a comment with weird exception information" in {
+        jiraExceptionProcessor.reportError(r, new Exception("Issue from automatic test with more than 250 characters                                                                                                                                                                                                       end"))
+        ok
+      }
 
-      val r = FakeRequest("GET", "http://testuri.nl/?something", FakeHeaders(Seq("testheader" -> "headervalue")), "body")
+      "report an error or add a comment with weird exception information" in {
 
-      JiraExceptionProcessor.reportError(r, new Exception("Issue from automatic test with more than 250 characters and a newline               \n                                                                                                                                                                                       end"))
-      ok
-    }
+        val r = FakeRequest("GET", "http://testuri.nl/?something", FakeHeaders(Seq("testheader" -> "headervalue")), "body")
 
-    "report an error as similar if it's a PlayException" in {
-      val r = FakeRequest("GET", "http://testuri.nl/?something", FakeHeaders(Seq("testheader" -> "headervalue 1")), "body 1")
+        jiraExceptionProcessor.reportError(r, new Exception("Issue from automatic test with more than 250 characters and a newline               \n                                                                                                                                                                                       end"))
+        ok
+      }
 
-      JiraExceptionProcessor.reportError(r, new PlayException("Issue from automatic test for play exception", "with ID"))
-      ok
-    }
+      "report an error as similar if it's a PlayException" in {
+        val r = FakeRequest("GET", "http://testuri.nl/?something", FakeHeaders(Seq("testheader" -> "headervalue 1")), "body 1")
 
-    "report an error without a request" in {
-      JiraExceptionProcessor.reportError(ErrorInformation("Issue for automatic test without request", "test description", "comment"))
-      ok
-    }
+        jiraExceptionProcessor.reportError(r, new PlayException("Issue from automatic test for play exception", "with ID"))
+        ok
+      }
 
-  }
+      "report an error without a request" in {
+        jiraExceptionProcessor.reportError(ErrorInformation("Issue for automatic test without request", "test description", "comment"))
+        ok
+      }
 
-  "ErrorInformation" should {
+      "report problem in akka actor" in {
+        class TestActor extends Actor {
+          def receive = {
+            case "test" => sys error "test actor failure"
+            case "done" => sender ! "done"
+          }
+        }
+        val system = ActorSystem("test")
+        val ref = system.actorOf(Props(new TestActor))
 
-    "have an alternative apply method" in {
-      val m = "test"
-      val t = new Exception(m)
-      val c = "comment"
+        ref ! "test"
 
-      val e = ErrorInformation(t, c)
+        import akka.pattern.ask
+        implicit val timeout = Timeout(5.seconds)
+        Await.result(ref ? "done", timeout.duration)
 
-      e.summary === m
-      e.description === JiraExceptionProcessor.getStackTraceString(t)
-      e.comment === c
+        system.shutdown()
+        system.awaitTermination()
+        ok
+      }
     }
   }
 }
