@@ -85,10 +85,9 @@ class Jira(
   private def extractHashCustomFieldIdFrom(json: JsValue) = {
     val hashCustomField =
       json.as[Seq[JsValue]]
-        .filter { field =>
+        .find { field =>
           (field \ "name").as[String] == configuration.hashCustomFieldName
         }
-        .headOption
         .getOrElse(throw new Exception("Could not find a field with the name 'Hash'"))
 
     (hashCustomField \ "id").as[String]
