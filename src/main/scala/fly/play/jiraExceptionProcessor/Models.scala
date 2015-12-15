@@ -1,6 +1,6 @@
 package fly.play.jiraExceptionProcessor
 
-import java.security.MessageDigest
+import play.api.libs.Codecs
 import play.api.libs.json.Json.toJson
 import play.api.libs.json._
 
@@ -78,7 +78,7 @@ case class ErrorInformation(summary: String, description: String, comment: Strin
     message.replaceFirst("""@[^\s]*""", "")
 
   private def createHash(str: String): String =
-    MessageDigest.getInstance("MD5").digest(str.getBytes).map("%02X" format _).mkString
+    Codecs.md5(str.getBytes)
 }
 
 object ErrorInformation extends ((String, String, String) => ErrorInformation) {
