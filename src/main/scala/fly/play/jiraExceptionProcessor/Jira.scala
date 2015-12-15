@@ -1,6 +1,5 @@
 package fly.play.jiraExceptionProcessor
 
-import play.api.Logger
 import play.api.Play.current
 import play.api.libs.json.JsValue
 import play.api.libs.json.Json.toJson
@@ -130,8 +129,6 @@ class Jira(
    */
   private def request(relativePath: String) = {
     val completeUrl = configuration.endpoint + relativePath
-
-    Logger info ("Complete URL: %s" format completeUrl)
 
     client
       .url(completeUrl)

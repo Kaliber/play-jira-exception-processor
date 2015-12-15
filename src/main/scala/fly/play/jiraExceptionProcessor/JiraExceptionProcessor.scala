@@ -49,7 +49,6 @@ class JiraExceptionProcessor(client: WSClient, configuration: Configuration)(imp
 
     if (!enabled) return Future.successful(())
 
-
     val result =
       reportToJira(information)
         .recover {
@@ -123,7 +122,7 @@ class JiraExceptionProcessor(client: WSClient, configuration: Configuration)(imp
     val message = s"""|Status: ${error.status}
                       |${error.messages.mkString("\n\n")}""".stripMargin
 
-    Logger error "Failed to report to Jira " + message
+    Logger.error("Failed to report to Jira, message: " + message)
 
     mailer.sendEmail(
       Email(
