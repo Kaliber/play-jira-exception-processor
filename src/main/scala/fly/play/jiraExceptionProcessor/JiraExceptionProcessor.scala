@@ -42,7 +42,7 @@ class JiraExceptionProcessor(client: WSClient, configuration: Configuration)(imp
   private def actualReport(information: ErrorInformation): Future[Unit] = {
     val enabled = configuration.getBoolean("jira.exceptionProcessor.enabled").getOrElse(true)
 
-    Logger.error("Logged from Jira exception processor (enabled = $enabled)")
+    Logger.error(s"Logged from Jira exception processor (enabled = $enabled)")
     Logger.error("Summary: "       + information.summary)
     Logger.error("Description: \n" + information.description)
     Logger.error("Comment: \n"     + information.comment)
