@@ -52,7 +52,14 @@ object JiraExceptionProcessor {
   def keyValueSeq(key: String, value: Seq[String]): String = keyValue(key, value.mkString(", "))
 
   def reportError(information: ErrorInformation): Unit = {
-    if (!PlayConfiguration("jira.exceptionProcessor.enabled").toBoolean) return
+    val enabled = PlayConfiguration("jira.exceptionProcessor.enabled").toBoolean
+
+    Logger error s"Logged from Jira exception processor (enabled = $enabled)"
+    Logger error "Summary: "       + information.summary
+    Logger error "Description: \n" + information.description
+    Logger error "Comment: \n"     + information.comment
+
+    if (!enabled) return
 
     val summary = information.summary
     val description = information.description

@@ -17,6 +17,11 @@ import scala.language.postfixOps
 import play.api.libs.json.Json
 
 object Jira {
+
+  val SUMMARY_MAX_LENGTH     = 250
+  val DESCRIPTION_MAX_LENGTH = 32767
+  val COMMENT_MAX_LENGTH     = 32767
+
   /**
    * The endpoint, for example: https://jira.rhinofly.net/rpc/json-rpc/jirasoapservice-v2/
    */
@@ -131,7 +136,7 @@ object Jira {
    * Simple method to add a comment to an issue
    */
   def addComment(issueKey: String, comment: String): Future[Either[Error, Success]] = {
-    val body = toJson(Map("body" -> toJson(comment)))
+    val body = toJson(Map("body" -> toJson(comment.take(COMMENT_MAX_LENGTH))))
 
     request("issue/%s/comment" format issueKey)
       .post(body) map handleResponse {

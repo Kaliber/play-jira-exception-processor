@@ -1,7 +1,5 @@
 name := "jira-exception-processor"
 
-version := "3.2.1"
-
 scalaVersion := "2.11.1"
 
 crossScalaVersions := Seq("2.11.1", "2.10.4")

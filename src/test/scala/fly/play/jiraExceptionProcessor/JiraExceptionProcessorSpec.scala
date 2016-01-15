@@ -66,6 +66,24 @@ object JiraExceptionProcessorSpec extends Specification with Before {
       ok
     }
 
+    "report an error or add a comment with an exceptionally large description" in {
+
+      val r = FakeRequest("GET", "http://testuri.nl/?something", FakeHeaders(Seq("testheader" -> Seq("headervalue"))), "body")
+
+      val thirtyThreeThousandSpaces = "                                                                                                    " * 330
+      JiraExceptionProcessor.reportError(r, new Exception("Issue from automatic test with more than 32,767 characters in description" + thirtyThreeThousandSpaces + "end"))
+      ok
+    }
+    
+    "report an error or add a comment with an exceptionally large comment" in {
+
+      val h = FakeHeaders(Seq("testheader" -> Range(1, 2000).map("headervalue" + _)))
+      val r = FakeRequest("GET", "http://testuri.nl/?something", h, "body")
+
+      JiraExceptionProcessor.reportError(r, new Exception("Issue from automatic test with more than 32,767 characters in comment"))
+      ok
+    }
+    
     "report an error as similar if it's a PlayException" in {
       val r = FakeRequest("GET", "http://testuri.nl/?something", FakeHeaders(Seq("testheader" -> Seq("headervalue 1"))), "body 1")
 
