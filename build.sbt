@@ -6,11 +6,13 @@ resolvers ++= Seq(
   "Kaliber Repository" at "https://jars.kaliber.io/artifactory/libs-release-local"
 )
 
+val playVersion = "2.4.0"
+
 libraryDependencies ++= Seq(
-  "com.typesafe.play" %% "play"        % "2.4.0" % "provided",
-  "com.typesafe.play" %% "play-ws"     % "2.4.0" % "provided",
-  "com.typesafe.play" %% "play-test"   % "2.4.0" % "test",
-  "org.specs2"        %% "specs2-core" % "3.6.2" % "test",
+  "com.typesafe.play" %% "play"        % playVersion % "provided",
+  "com.typesafe.play" %% "play-ws"     % playVersion % "provided",
+  "com.typesafe.play" %% "play-test"   % playVersion % "test",
+  "org.specs2"        %% "specs2-core" % "3.8.4" % "test",
   "net.kaliber"       %% "play-mailer" % "4.0.0"
 )
 
