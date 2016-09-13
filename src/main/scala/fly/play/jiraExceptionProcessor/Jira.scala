@@ -1,6 +1,5 @@
 package fly.play.jiraExceptionProcessor
 
-import play.api.Play.current
 import play.api.libs.json.JsValue
 import play.api.libs.json.Json.toJson
 import play.api.libs.ws.WSAuthScheme
@@ -46,14 +45,20 @@ class Jira(
   }
 
   private def findIssue(hash: String, componentId: String, hashCustomField: String) =
-    playProjectIssueFormat flatMap { implicit format =>
+    playProjectIssueFormat flatMap { implicit format => {
+      val searchOnHash = configuration.hashCustomFieldType match {
+        case JiraExceptionProcessorConfiguration.FieldType.UUID => s"${configuration.hashCustomFieldName} = $hash "
+        case JiraExceptionProcessorConfiguration.FieldType.TEXT => raw"""${configuration.hashCustomFieldName} ~ "\"$hash\"" """
+        case _ => throw new Exception(s"hashCustomFieldType ${configuration.hashCustomFieldType} isn't supported")
+      }
+
       request("search")
         .withQueryString(
           "jql" -> (
              s"project = ${configuration.projectKey} AND " +
              s"component = $componentId AND " +
              s"resolution = Unresolved AND " +
-             s"${configuration.hashCustomFieldName} = $hash " +
+             searchOnHash +
              "ORDER BY priority DESC"
           ),
           "fields" -> s"summary,key,description,$hashCustomField"
@@ -63,7 +68,7 @@ class Jira(
             Right((response.json \ "issues").as[Seq[PlayProjectIssue]].headOption)
           }
         }
-    }
+    }}
 
   private def playProjectIssueFormat =
     Future.sequence(Seq(projectId, componentId, hashCustomField)) map {
