@@ -18,6 +18,9 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 
 object JiraExceptionProcessorSpec extends Specification with Before {
+
+  sequential
+
   def f = {
     val context = ApplicationLoader.createContext(
       Environment(new java.io.File("."), getClass.getClassLoader, Mode.Test)

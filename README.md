@@ -32,6 +32,7 @@ jira.exceptionProcessor.projectKey=PA
 jira.exceptionProcessor.componentName=tests
 # Hash is the default
 #jira.exceptionProcessor.hashCustomFieldName=Hash
+#jira.exceptionProcessor.hashCustomFieldType=UUID
 # 1 is the default (Bug)
 #jira.exceptionProcessor.issueType=1
 
