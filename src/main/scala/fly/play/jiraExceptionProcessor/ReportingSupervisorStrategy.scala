@@ -1,17 +1,10 @@
 package fly.play.jiraExceptionProcessor
 
-import akka.actor.ActorContext
-import akka.actor.ActorRef
-import akka.actor.ChildRestartStats
-import akka.actor.SupervisorStrategy
-import akka.actor.SupervisorStrategyConfigurator
-import play.api.Configuration
-import play.api.Environment
-import play.api.Mode
-import play.api.libs.ws.WSClientConfig
-import play.api.libs.ws.WSConfigParser
-import play.api.libs.ws.ning.NingWSClient
-import play.api.libs.ws.ning.NingWSClientConfigParser
+import akka.actor.{ActorContext, ActorRef, ActorSystem, ChildRestartStats, SupervisorStrategy, SupervisorStrategyConfigurator}
+import akka.stream.ActorMaterializer
+import play.api.{Configuration, Environment, Mode}
+import play.api.libs.ws.{WSClient, WSConfigParser}
+import play.api.libs.ws.ahc.{AhcConfigBuilder, AhcWSClient, AhcWSClientConfig}
 
 class ReportingSupervisorStrategy extends SupervisorStrategyConfigurator {
   def create(): SupervisorStrategy =
@@ -42,15 +35,29 @@ class ReportingStrategyWrapper(wrapped: SupervisorStrategy, comment: String) ext
 
   private def reportException(context: ActorContext, exception: Throwable) = {
     val configuration = Configuration(context.system.settings.config)
-    val wsClient = {
-      val environment = Environment.simple(mode = Mode.Prod)
-      val wsConfig = new WSConfigParser(configuration, environment).parse
-      val ningWsConfig = new NingWSClientConfigParser(wsConfig, configuration, environment).parse
-      NingWSClient(ningWsConfig)
+
+    def withWsClient[T](code: WSClient => T): T = {
+      val wsClient = {
+        val environment = Environment.simple(mode = Mode.Prod)
+
+        val parser = new WSConfigParser(configuration, environment)
+        val config = AhcWSClientConfig(wsClientConfig = parser.parse())
+        val builder = new AhcConfigBuilder(config)
+        val ahcConfig = builder.configure().build()
+
+        implicit val system = ActorSystem("jiraExceptionProcessor")
+        implicit val materializer = ActorMaterializer()
+        new AhcWSClient(ahcConfig)
+      }
+      try code(wsClient)
+      finally wsClient.close()
     }
 
-    import context.dispatcher
+    withWsClient { wsClient =>
+      import context.dispatcher
 
-    new JiraExceptionProcessor(wsClient, configuration).reportError(ErrorInformation(exception, comment))
+      new JiraExceptionProcessor(wsClient, configuration)
+        .reportError(ErrorInformation(exception, comment))
+    }
   }
 }

@@ -1,18 +1,13 @@
 package fly.play.jiraExceptionProcessor
 
-import akka.actor.Actor
-import akka.actor.ActorSystem
-import akka.actor.Props
+import akka.actor.{Actor, ActorSystem, Props}
 import akka.util.Timeout
-import org.specs2.mutable.{ Specification, Before }
-import play.api.ApplicationLoader
-import play.api.Configuration
-import play.api.Environment
-import play.api.Mode
+import org.specs2.mutable.{Before, Specification}
 import play.api.Play.current
-import play.api.PlayException
+import play.api._
 import play.api.libs.ws.WS
 import play.api.test._
+
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
