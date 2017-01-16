@@ -11,3 +11,7 @@ dist
 /.settings
 src/test/conf/overrides.conf
 .target
+
+# IDE files
+.idea
+.idea_modules

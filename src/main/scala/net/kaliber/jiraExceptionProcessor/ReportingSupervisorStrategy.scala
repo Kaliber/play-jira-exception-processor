@@ -1,4 +1,4 @@
-package fly.play.jiraExceptionProcessor
+package net.kaliber.jiraExceptionProcessor
 
 import akka.actor.{ActorContext, ActorRef, ActorSystem, ChildRestartStats, SupervisorStrategy, SupervisorStrategyConfigurator}
 import akka.stream.ActorMaterializer
@@ -34,13 +34,14 @@ class ReportingStrategyWrapper(wrapped: SupervisorStrategy, comment: String) ext
   }
 
   private def reportException(context: ActorContext, exception: Throwable) = {
-    val configuration = Configuration(context.system.settings.config)
+    val configuration = context.system.settings.config
 
     def withWsClient[T](code: WSClient => T): T = {
       val wsClient = {
         val environment = Environment.simple(mode = Mode.Prod)
 
-        val parser = new WSConfigParser(configuration, environment)
+        val playConfiguration = Configuration(configuration)
+        val parser = new WSConfigParser(playConfiguration, environment)
         val config = AhcWSClientConfig(wsClientConfig = parser.parse())
         val builder = new AhcConfigBuilder(config)
         val ahcConfig = builder.configure().build()
@@ -56,7 +57,7 @@ class ReportingStrategyWrapper(wrapped: SupervisorStrategy, comment: String) ext
     withWsClient { wsClient =>
       import context.dispatcher
 
-      new JiraExceptionProcessor(wsClient, configuration)
+      new JiraExceptionProcessor(wsClient, JiraExceptionProcessorSettings.fromConfig(configuration))
         .reportError(ErrorInformation(exception, comment))
     }
   }

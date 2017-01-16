@@ -1,4 +1,4 @@
-package fly.play.jiraExceptionProcessor
+package net.kaliber.jiraExceptionProcessor
 
 import java.io.StringWriter
 import java.io.PrintWriter
@@ -6,9 +6,7 @@ import javax.mail.Message
 import net.kaliber.mailer.Email
 import net.kaliber.mailer.EmailAddress
 import net.kaliber.mailer.Mailer
-import net.kaliber.mailer.Session
 import net.kaliber.mailer.Recipient
-import play.api.Configuration
 import play.api.Logger
 import play.api.PlayException
 import play.api.libs.ws.WSClient
@@ -18,13 +16,13 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-class JiraExceptionProcessor(client: WSClient, configuration: Configuration)(implicit ec: ExecutionContext) {
+class JiraExceptionProcessor(client: WSClient, settings: JiraExceptionProcessorSettings)(implicit ec: ExecutionContext) {
 
   // these are lazy so the configuration can have missing settings when disabled
-  private lazy val processorConfiguration = JiraExceptionProcessorConfiguration fromConfiguration configuration
+  private lazy val processorConfiguration = settings.processorSettings
   private lazy val (jira, mailer) = (
     new Jira(client, processorConfiguration),
-    new Mailer(Session fromConfiguration configuration)
+    new Mailer(settings.mailerSession)
   )
 
   /*
@@ -40,7 +38,7 @@ class JiraExceptionProcessor(client: WSClient, configuration: Configuration)(imp
     Await.result(actualReport(information), 10.seconds)
 
   private def actualReport(information: ErrorInformation): Future[Unit] = {
-    val enabled = configuration.getBoolean("jira.exceptionProcessor.enabled").getOrElse(true)
+    val enabled = settings.enabled
 
     Logger.error(s"Logged from Jira exception processor (enabled = $enabled)")
     Logger.error("Summary: "       + information.summary)
@@ -93,7 +91,7 @@ class JiraExceptionProcessor(client: WSClient, configuration: Configuration)(imp
           optionalIssue match {
             case Some(issue) => Helper(issue)
             case None        =>
-              Helper(jira createIssue PlayProjectIssue(summary, description, hash))
+              Helper(jira createIssue ProjectIssue(summary, description, hash))
           }
         _             <- Helper(jira.addComment(issue.key.get, information.comment))
       } yield ()

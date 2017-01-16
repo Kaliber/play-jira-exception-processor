@@ -1,4 +1,4 @@
-package fly.play.jiraExceptionProcessor
+package net.kaliber.jiraExceptionProcessor
 
 import akka.actor.{Actor, ActorSystem, Props}
 import akka.util.Timeout
@@ -28,7 +28,7 @@ object JiraExceptionProcessorSpec extends Specification with Before {
   for (i <- 1 to 2) {
     s"JiraExceptionProcessor $i" should {
 
-      val jiraExceptionProcessor = new JiraExceptionProcessor(WS.client, current.configuration)
+      val jiraExceptionProcessor = new JiraExceptionProcessor(WS.client, JiraExceptionProcessorSettings.fromConfig(current.configuration.underlying))
 
       "report an error and add a comment" in {
 
@@ -44,7 +44,7 @@ object JiraExceptionProcessorSpec extends Specification with Before {
           "jira.endpoint" -> "https://this-is-wrong.atlassian.net/rest/api/2/"
         )
 
-        val jiraExceptionProcessor = new JiraExceptionProcessor(WS.client, brokenConfiguration)
+        val jiraExceptionProcessor = new JiraExceptionProcessor(WS.client, JiraExceptionProcessorSettings.fromConfig(brokenConfiguration.underlying))
         val e = ErrorInformation("Dit is een test om te kijken of er een mailtje verstuurd wordt wanneer er iets mis gaat met de automatische error reporting", "test description", "[fake stack trace]")
         jiraExceptionProcessor.reportError(e)
         ok

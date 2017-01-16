@@ -1,4 +1,4 @@
-package fly.play.jiraExceptionProcessor
+package net.kaliber.jiraExceptionProcessor
 
 import play.api.libs.Codecs
 import play.api.libs.json.Json.toJson
@@ -15,37 +15,37 @@ object Error {
         })
 }
 
-case class PlayProjectIssue(
+case class ProjectIssue(
   key: Option[String],
   summary: Option[String],
   description: Option[String],
   hash: Option[String]) {
 }
 
-object PlayProjectIssue extends ((Option[String], Option[String], Option[String], Option[String]) => PlayProjectIssue) {
+object ProjectIssue extends ((Option[String], Option[String], Option[String], Option[String]) => ProjectIssue) {
 
-  def apply(summary: String, description: String, hash: String): PlayProjectIssue =
-    PlayProjectIssue(None, Some(summary), Some(description), Some(hash))
+  def apply(summary: String, description: String, hash: String): ProjectIssue =
+    ProjectIssue(None, Some(summary), Some(description), Some(hash))
 
   def format(
     projectId: String,
     componentId: String,
     hashCustomFieldName: String,
     issueType: String
-  ): Format[PlayProjectIssue] = new Format[PlayProjectIssue] {
+  ): Format[ProjectIssue] = new Format[ProjectIssue] {
 
     def reads(json: JsValue) = {
 
       val fields = json \ "fields"
 
-      JsSuccess(PlayProjectIssue(
+      JsSuccess(ProjectIssue(
         (json \ "key").asOpt[String],
         (fields \ "summary").asOpt[String],
         (fields \ "description").asOpt[String],
         (fields \ hashCustomFieldName).asOpt[String]))
     }
 
-    def writes(playProjectIssue: PlayProjectIssue) = {
+    def writes(projectIssue: ProjectIssue) = {
 
       def field[T : Writes](pairs: (String, T)*): JsObject =
         JsObject(pairs.map { case (key, value) => key -> toJson(value) })
@@ -55,14 +55,14 @@ object PlayProjectIssue extends ((Option[String], Option[String], Option[String]
       map(
         "fields" -> map(
           "project" -> field("id" -> projectId),
-          "summary" -> toJson(trimSummary(playProjectIssue.summary)),
+          "summary" -> toJson(trimSummary(projectIssue.summary)),
           "description" -> toJson(
-            playProjectIssue.summary.getOrElse("") + "\n" +
-            playProjectIssue.description.getOrElse("")
+            projectIssue.summary.getOrElse("") + "\n" +
+              projectIssue.description.getOrElse("")
           ),
           "issuetype" -> field("id" -> issueType),
           "components" -> JsArray(Seq(field("id" -> componentId))),
-          hashCustomFieldName -> toJson(playProjectIssue.hash)))
+          hashCustomFieldName -> toJson(projectIssue.hash)))
     }
 
     private def trimSummary(summary: Option[String]): Option[String] =

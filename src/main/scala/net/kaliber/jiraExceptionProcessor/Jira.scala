@@ -1,4 +1,4 @@
-package fly.play.jiraExceptionProcessor
+package net.kaliber.jiraExceptionProcessor
 
 import play.api.libs.json.JsValue
 import play.api.libs.json.Json.toJson
@@ -16,19 +16,19 @@ class Jira(
   /**
    * Retrieves a list of issues for the given hash
    */
-  def findIssues(hash: String): Future[Either[Error, Option[PlayProjectIssue]]] =
+  def findIssues(hash: String): Future[Either[Error, Option[ProjectIssue]]] =
     for {
       componentId     <- componentId
       hashCustomField <- hashCustomField
       result          <- findIssue(hash, componentId, hashCustomField)
     } yield result
 
-  def createIssue(issue: PlayProjectIssue): Future[Either[Error, PlayProjectIssue]] =
+  def createIssue(issue: ProjectIssue): Future[Either[Error, ProjectIssue]] =
     playProjectIssueFormat flatMap { implicit format =>
       val body = toJson(issue)
 
       request("issue").post(body) map handleResponse {
-        case (201, response) => Right(response.json.as[PlayProjectIssue])
+        case (201, response) => Right(response.json.as[ProjectIssue])
       }
     }
 
@@ -65,7 +65,7 @@ class Jira(
         )
         .get() map handleResponse {
           case (200, response) => {
-            Right((response.json \ "issues").as[Seq[PlayProjectIssue]].headOption)
+            Right((response.json \ "issues").as[Seq[ProjectIssue]].headOption)
           }
         }
     }}
@@ -73,7 +73,7 @@ class Jira(
   private def playProjectIssueFormat =
     Future.sequence(Seq(projectId, componentId, hashCustomField)) map {
       case Seq(projectId, componentId, hashCustomField) =>
-        PlayProjectIssue.format(projectId, componentId, hashCustomField, configuration.issueType)
+        ProjectIssue.format(projectId, componentId, hashCustomField, configuration.issueType)
     }
 
   private lazy val hashCustomField =

@@ -1,4 +1,4 @@
-Jira exception processor module for Play 2.4.x
+Jira exception processor module for Play 2.5.x
 ==============================================
 
 This module is created for internal use. If there is any interest in this feature for play, please contact us so we can make it more portable.
@@ -57,11 +57,14 @@ akka.actor.guardian-supervisor-strategy = "fly.play.jiraExceptionProcessor.Repor
 Usage
 -----
 
-The actual usage depends on the strategy you are using for creating Play Applications.
-
+The actual usage depends on the strategy you are using for creating applications.
 ``` scala
+{
+  val typesafeConfig = playConfiguration.underlying
+
   val jiraExceptionProcessor =
-    new JiraExceptionProcessor(wsClient, playConfiguration)
+    new JiraExceptionProcessor(wsClient, 
+    JiraExceptionProcessorSettings.fromConfig(typesafeConfig))
 
   def onError(request:RequestHeader, ex:Throwable) =
     jiraExceptionProcessor.reportError(request, ex)

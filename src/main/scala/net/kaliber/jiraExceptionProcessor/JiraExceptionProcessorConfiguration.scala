@@ -1,7 +1,6 @@
-package fly.play.jiraExceptionProcessor
+package net.kaliber.jiraExceptionProcessor
 
-import play.api.Configuration
-import play.api.PlayException
+import com.typesafe.config.Config
 
 case class JiraExceptionProcessorConfiguration(
   endpoint: String,
@@ -20,6 +19,8 @@ case class JiraExceptionProcessorConfiguration(
 
 object JiraExceptionProcessorConfiguration {
 
+  private val customFieldTypePath= "jira.exceptionProcessor.hashCustomFieldType"
+
   object FieldType extends Enumeration {
     val UUID, TEXT = Value
 
@@ -27,10 +28,20 @@ object JiraExceptionProcessorConfiguration {
       values.find(s.toLowerCase == _.toString.toLowerCase).getOrElse(UUID)
   }
 
-  def fromConfiguration(configuration: Configuration): JiraExceptionProcessorConfiguration = {
+  def fromConfig(config: Config): JiraExceptionProcessorConfiguration = {
+    def error(key: String) = sys.error(s"Could not find $key in settings")
 
-    def getString(key: String, default: Option[String] = None): String =
-      configuration getString key orElse default getOrElse error(key)
+    def getString(key: String, default: Option[String] = None): String = {
+      val configValueOption = if(config.hasPath(key)) {
+        Some(config.getString(key))
+      } else {
+        default
+      }
+
+      configValueOption getOrElse error(key)
+    }
+
+    val hashCustomFieldType = if(config.hasPath(customFieldTypePath)) FieldType(config.getString(customFieldTypePath)) else FieldType.UUID
 
     JiraExceptionProcessorConfiguration(
       endpoint            = getString("jira.endpoint"),
@@ -39,7 +50,7 @@ object JiraExceptionProcessorConfiguration {
       projectKey          = getString("jira.exceptionProcessor.projectKey"),
       componentName       = getString("jira.exceptionProcessor.componentName"),
       hashCustomFieldName = getString("jira.exceptionProcessor.hashCustomFieldName", default = Some("Hash")),
-      hashCustomFieldType = configuration.getString("jira.exceptionProcessor.hashCustomFieldType").map(FieldType(_)).getOrElse(FieldType.UUID),
+      hashCustomFieldType = hashCustomFieldType,
       issueType           = getString("jira.exceptionProcessor.issueType", default = Some("1")),
       fromName            = getString("jira.exceptionProcessor.mail.from.name"),
       fromAddress         = getString("jira.exceptionProcessor.mail.from.address"),
@@ -47,6 +58,4 @@ object JiraExceptionProcessorConfiguration {
       toAddress           = getString("jira.exceptionProcessor.mail.to.address")
     )
   }
-
-  private def error(key: String) = throw new PlayException("Configuration error", s"Could not find $key in settings")
 }
