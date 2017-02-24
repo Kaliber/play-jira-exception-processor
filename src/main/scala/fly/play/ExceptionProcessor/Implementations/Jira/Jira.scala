@@ -1,12 +1,11 @@
-package fly.play.jiraExceptionProcessor
+package fly.play.ExceptionProcessor.Implementations.Jira
 
+import fly.play.ExceptionProcessor.{Error, PlayProjectIssue}
 import play.api.libs.json.JsValue
 import play.api.libs.json.Json.toJson
-import play.api.libs.ws.WSAuthScheme
-import play.api.libs.ws.WSClient
-import play.api.libs.ws.WSResponse
-import scala.concurrent.ExecutionContext
-import scala.concurrent.Future
+import play.api.libs.ws.{WSAuthScheme, WSClient, WSResponse}
+
+import scala.concurrent.{ExecutionContext, Future}
 
 class Jira(
   client: WSClient,

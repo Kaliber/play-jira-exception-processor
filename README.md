@@ -51,7 +51,7 @@ mail.username="username"
 mail.password="password"
 
 # Process exceptions from the actor system
-akka.actor.guardian-supervisor-strategy = "fly.play.jiraExceptionProcessor.ReportingSupervisorStrategy"
+akka.actor.guardian-supervisor-strategy = "fly.play.ExceptionProcessor.Implementations.Jira.ReportingSupervisorStrategy"
 ```
 
 Usage

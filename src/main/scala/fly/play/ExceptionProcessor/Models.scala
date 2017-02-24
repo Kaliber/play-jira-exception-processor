@@ -1,5 +1,6 @@
-package fly.play.jiraExceptionProcessor
+package fly.play.ExceptionProcessor
 
+import fly.play.ExceptionProcessor.Implementations.Jira.JiraExceptionProcessor
 import play.api.libs.Codecs
 import play.api.libs.json.Json.toJson
 import play.api.libs.json._

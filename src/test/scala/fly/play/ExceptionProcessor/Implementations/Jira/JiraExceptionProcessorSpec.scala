@@ -1,15 +1,16 @@
-package fly.play.jiraExceptionProcessor
+package fly.play.ExceptionProcessor.Implementations.Jira
 
 import akka.actor.{Actor, ActorSystem, Props}
 import akka.util.Timeout
+import fly.play.ExceptionProcessor.ErrorInformation
 import org.specs2.mutable.{Before, Specification}
 import play.api.Play.current
 import play.api._
 import play.api.libs.ws.WS
 import play.api.test._
+import scala.concurrent.ExecutionContext.Implicits.global
 
 import scala.concurrent.Await
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 
 object JiraExceptionProcessorSpec extends Specification with Before {

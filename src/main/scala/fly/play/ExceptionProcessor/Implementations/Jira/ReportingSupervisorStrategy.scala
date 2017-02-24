@@ -1,10 +1,11 @@
-package fly.play.jiraExceptionProcessor
+package fly.play.ExceptionProcessor.Implementations.Jira
 
 import akka.actor.{ActorContext, ActorRef, ActorSystem, ChildRestartStats, SupervisorStrategy, SupervisorStrategyConfigurator}
 import akka.stream.ActorMaterializer
-import play.api.{Configuration, Environment, Mode}
-import play.api.libs.ws.{WSClient, WSConfigParser}
+import fly.play.ExceptionProcessor.ErrorInformation
 import play.api.libs.ws.ahc.{AhcConfigBuilder, AhcWSClient, AhcWSClientConfig}
+import play.api.libs.ws.{WSClient, WSConfigParser}
+import play.api.{Configuration, Environment, Mode}
 
 class ReportingSupervisorStrategy extends SupervisorStrategyConfigurator {
   def create(): SupervisorStrategy =

@@ -1,24 +1,19 @@
-package fly.play.jiraExceptionProcessor
+package fly.play.ExceptionProcessor.Implementations.Jira
 
-import java.io.StringWriter
-import java.io.PrintWriter
+import java.io.{PrintWriter, StringWriter}
 import javax.mail.Message
-import net.kaliber.mailer.Email
-import net.kaliber.mailer.EmailAddress
-import net.kaliber.mailer.Mailer
-import net.kaliber.mailer.Session
-import net.kaliber.mailer.Recipient
-import play.api.Configuration
-import play.api.Logger
-import play.api.PlayException
+
+import fly.play.ExceptionProcessor.{Error, ErrorInformation, ExceptionProcessor, PlayProjectIssue}
+import net.kaliber.mailer._
 import play.api.libs.ws.WSClient
 import play.api.mvc.RequestHeader
-import scala.concurrent.Await
-import scala.concurrent.ExecutionContext
-import scala.concurrent.Future
-import scala.concurrent.duration._
+import play.api.{Configuration, Logger, PlayException}
 
-class JiraExceptionProcessor(client: WSClient, configuration: Configuration)(implicit ec: ExecutionContext) {
+import scala.concurrent.duration._
+import scala.concurrent.{Await, ExecutionContext, Future}
+
+class JiraExceptionProcessor(val client: WSClient, val configuration: Configuration)(implicit ec: ExecutionContext) extends ExceptionProcessor {
+
 
   // these are lazy so the configuration can have missing settings when disabled
   private lazy val processorConfiguration = JiraExceptionProcessorConfiguration fromConfiguration configuration

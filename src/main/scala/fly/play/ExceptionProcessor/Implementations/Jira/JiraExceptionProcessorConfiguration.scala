@@ -1,7 +1,6 @@
-package fly.play.jiraExceptionProcessor
+package fly.play.ExceptionProcessor.Implementations.Jira
 
-import play.api.Configuration
-import play.api.PlayException
+import play.api.{Configuration, PlayException}
 
 case class JiraExceptionProcessorConfiguration(
   endpoint: String,
