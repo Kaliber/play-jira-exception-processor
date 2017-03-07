@@ -9,10 +9,7 @@ Installation
 In the `build.sbt` file add the following lines:
 
 ``` scala
-libraryDependencies += "net.kaliber" %% "jira-exception-processor" % "4.1.0"
-
-resolvers += "Kaliber Repository" at "https://jars.kaliber.io/artifactory/libs-release-local"
-
+libraryDependencies += "net.kaliber" %% "jira-exception-processor" % "5.0.0"
 ```
 
 Configuration
